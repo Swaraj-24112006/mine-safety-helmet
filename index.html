@@ -92,7 +92,10 @@ main{padding:22px;display:grid;grid-template-columns:repeat(auto-fill,minmax(290
 /* ================= EDIT THIS SECTION ================= */
 const CFG = {
   root: "mineguard-pune-swaraj-2026",          // must match TOPIC_ROOT in the helmet firmware
-  broker: "wss://qffa16a6.ala.asia-southeast1.emqxsl.com:8084/mqtt",   // EMQX secure WebSocket (verify path in EMQX connection info)
+  // Must match MQTT_HOST in MineGuard_EMQX_SingleFile.ino. Browser uses secure WebSockets.
+  broker: "wss://qffa16a6.ala.asia-southeast1.emqxsl.com:8084/mqtt",
+  port: 8084,
+  wsPath: "/mqtt",
   staleMs: 20000                               // no data for this long = inactive
 };
 const ROSTER = [
@@ -140,25 +143,95 @@ function showLogin(msg) {
 }
 function connect() {
   const el = document.getElementById("conn");
-  client = mqtt.connect(CFG.broker, { clientId: "dash-" + Math.random().toString(16).slice(2, 8),
-    username: creds.user, password: creds.pass, reconnectPeriod: 5000, connectTimeout: 10000 });
-  client.on("connect", () => {
-    el.textContent = "Connected"; el.className = "conn ok";
-    client.subscribe([`${CFG.root}/+/data`, `${CFG.root}/+/status`]);
-  });
-  client.on("error", e => {
-    el.textContent = "Error: " + e.message; el.className = "conn";
-    if (e.code === 4 || e.code === 5) {                              // bad credentials / not authorised
-      client.end(true); client = null; creds = { user: "", pass: "" };
-      showLogin("Login rejected by the broker. Check the dashboard username and password.");
-    }
-  });
-  client.on("close", () => { if (client) { el.textContent = "Disconnected, retrying..."; el.className = "conn"; } });
-  client.on("message", (topic, msg) => {
-    const p = topic.split("/");
-    ingest(p[p.length - 2], p[p.length - 1], msg.toString());
-    render();
-  });
+
+  // Give a readable error if the MQTT.js CDN did not load (for example, offline/no internet).
+  if (!window.mqtt || typeof window.mqtt.connect !== "function") {
+    el.textContent = "MQTT library unavailable";
+    el.className = "conn";
+    showLogin("Could not load the MQTT library. Check your internet connection and reload this page.");
+    return;
+  }
+
+  if (client) {
+    try { client.end(true); } catch (_) {}
+    client = null;
+  }
+
+  el.textContent = "Connecting to EMQX...";
+  el.className = "conn";
+
+  try {
+    client = window.mqtt.connect(CFG.broker, {
+      clientId: "dash-" + Math.random().toString(16).slice(2, 10),
+      username: creds.user,
+      password: creds.pass,
+      protocolVersion: 4,       // MQTT 3.1.1; compatible with typical EMQX Cloud deployments
+      clean: true,
+      keepalive: 30,
+      reconnectPeriod: 5000,
+      connectTimeout: 15000
+    });
+
+    client.on("connect", () => {
+      el.textContent = "Connected; subscribing...";
+      el.className = "conn ok";
+      client.subscribe([`${CFG.root}/+/data`, `${CFG.root}/+/status`], { qos: 0 }, (err) => {
+        if (err) {
+          el.textContent = "Subscribe error: " + err.message;
+          el.className = "conn";
+          return;
+        }
+        el.textContent = "Connected";
+        el.className = "conn ok";
+      });
+    });
+
+    client.on("reconnect", () => {
+      el.textContent = "Reconnecting to EMQX...";
+      el.className = "conn";
+    });
+
+    client.on("offline", () => {
+      el.textContent = "Offline; retrying...";
+      el.className = "conn";
+    });
+
+    client.on("error", e => {
+      const message = e && e.message ? e.message : "Unknown MQTT connection error";
+      el.textContent = "MQTT error: " + message;
+      el.className = "conn";
+
+      // MQTT.js/browser error codes for bad credentials or broker authorization failures.
+      if (e && (e.code === 4 || e.code === 5 || /not authori[sz]ed|bad user(name)? or password|bad credentials/i.test(message))) {
+        const oldClient = client;
+        client = null;
+        try { if (oldClient) oldClient.end(true); } catch (_) {}
+        creds = { user: "", pass: "" };
+        showLogin("Login rejected by EMQX. Check the dashboard account and its subscribe permissions.");
+      }
+    });
+
+    client.on("close", () => {
+      if (client) {
+        el.textContent = "Disconnected; retrying...";
+        el.className = "conn";
+      }
+    });
+
+    client.on("message", (topic, msg) => {
+      const p = topic.split("/");
+      if (p.length < 3 || p[0] !== CFG.root) return;
+      const kind = p[p.length - 1];
+      if (kind !== "data" && kind !== "status") return;
+      ingest(p[p.length - 2], kind, msg.toString());
+      render();
+    });
+  } catch (e) {
+    client = null;
+    el.textContent = "Unable to start MQTT connection";
+    el.className = "conn";
+    showLogin("Unable to start MQTT connection: " + (e && e.message ? e.message : "unknown error"));
+  }
 }
  
 /* ---------- Alarm ---------- */
@@ -262,4 +335,3 @@ document.getElementById("demoStart").onclick = () => {
 </script>
 </body>
 </html>
- 
