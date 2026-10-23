@@ -1,0 +1,534 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#17232e">
+  <title>MineGuard | Control Room</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #1c2934;
+      --slate: #17232e;
+      --slate-2: #253541;
+      --paper: #edf0f2;
+      --card: #fff;
+      --line: #d8dee2;
+      --muted: #62717c;
+      --yellow: #f4c542;
+      --green: #17784d;
+      --green-bg: #e5f4eb;
+      --red: #b52b2b;
+      --red-bg: #fff0ef;
+      --amber: #966300;
+      --amber-bg: #fff4d8;
+      --gray: #6b747b;
+      --gray-bg: #e9edef;
+      font-family: Barlow, Arial, sans-serif;
+      font-synthesis: none;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-width: 320px; background: var(--paper); color: var(--ink); }
+    button, input { font: inherit; }
+    button:focus-visible, input:focus-visible, label:focus-within { outline: 3px solid #2486c7; outline-offset: 3px; }
+    .topbar { background: var(--slate); color: #f5f7f8; border-bottom: 6px solid var(--yellow); }
+    .topbar-inner { max-width: 1500px; margin: auto; min-height: 90px; padding: 16px 28px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+    .brand { display: flex; align-items: center; gap: 15px; }
+    .brand-mark { display: grid; place-items: center; width: 48px; height: 48px; background: var(--yellow); color: var(--slate); font: 800 25px/1 "Barlow Condensed", sans-serif; clip-path: polygon(50% 0, 100% 24%, 100% 76%, 50% 100%, 0 76%, 0 24%); }
+    h1 { margin: 0; font: 800 30px/1 "Barlow Condensed", sans-serif; letter-spacing: .055em; text-transform: uppercase; }
+    .subtitle { margin: 5px 0 0; color: #c0cbd1; font-size: 13px; letter-spacing: .035em; }
+    .header-right { display: flex; align-items: center; gap: 14px; }
+    .prototype-tag { padding: 7px 10px; border: 1px solid #62717c; border-radius: 3px; color: #dbe2e6; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+    .connection { display: inline-flex; align-items: center; gap: 8px; min-width: 112px; font-size: 13px; font-weight: 700; }
+    .dot { width: 9px; height: 9px; border-radius: 50%; background: #98a3aa; box-shadow: 0 0 0 3px #ffffff16; flex: 0 0 auto; }
+    .connection[data-state="connected"] .dot { background: #55d390; }
+    .connection[data-state="error"] .dot { background: #fa7068; }
+    main { max-width: 1500px; margin: 0 auto; padding: 24px 28px 40px; }
+    .notice { border-left: 4px solid var(--yellow); padding: 10px 13px; margin: 0 0 19px; background: #fff9e9; color: #57461a; font-size: 13px; }
+    .summary { display: grid; grid-template-columns: repeat(4, minmax(130px, 1fr)) minmax(230px, 1.55fr); gap: 12px; margin-bottom: 20px; }
+    .stat, .summary-connection { min-height: 84px; padding: 14px 17px; background: #fff; border: 1px solid var(--line); border-top: 3px solid #85929a; border-radius: 4px; box-shadow: 0 2px 4px #1c29340a; }
+    .stat-label { color: var(--muted); font-size: 11px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; }
+    .stat-value { margin-top: 5px; font: 700 29px/1 "Barlow Condensed", sans-serif; }
+    .stat.active { border-top-color: var(--green); }.stat.danger { border-top-color: var(--red); }.stat.inactive { border-top-color: #879197; }
+    .summary-connection { display: flex; flex-direction: column; justify-content: center; gap: 8px; border-top-color: var(--yellow); }
+    .summary-connection .hint { color: var(--muted); font-size: 12px; }
+    .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 15px; margin: 0 0 13px; }
+    .toolbar h2 { margin: 0; font: 700 22px/1 "Barlow Condensed", sans-serif; text-transform: uppercase; letter-spacing: .05em; }
+    .toolbar-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 9px; }
+    .button { border: 1px solid #aeb8be; border-radius: 4px; padding: 9px 13px; background: white; color: var(--ink); font-weight: 700; font-size: 13px; cursor: pointer; }
+    .button:hover { background: #f7f8f9; }
+    .button.primary { background: var(--slate); color: white; border-color: var(--slate); }
+    .button.primary:hover { background: #2a3d4b; }
+    .button:disabled { opacity: .55; cursor: not-allowed; }
+    .demo-toggle { display: inline-flex; align-items: center; gap: 7px; min-height: 38px; padding: 0 10px; border: 1px solid #aeb8be; border-radius: 4px; background: #fff; font-size: 13px; font-weight: 700; cursor: pointer; }
+    .demo-toggle input { accent-color: var(--green); }
+    .demo-banner { display: none; margin: 0 0 13px; padding: 9px 12px; border-radius: 3px; background: #e6f1fa; color: #23506d; font-size: 13px; font-weight: 700; }
+    .demo-banner.visible { display: block; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 295px), 1fr)); gap: 14px; align-items: stretch; }
+    .worker-card { min-width: 0; background: var(--card); border: 1px solid var(--line); border-left: 5px solid #a6afb4; border-radius: 5px; box-shadow: 0 2px 8px #17232e0b; overflow: hidden; }
+    .worker-card.safe { border-left-color: var(--green); }.worker-card.danger { border-left-color: var(--red); outline: 2px solid #bd3434; outline-offset: -2px; animation: danger-pulse 1.4s ease-in-out infinite; }.worker-card.no-status { border-left-color: #d09617; }.worker-card.inactive { background: #f4f6f7; color: #67737b; border-left-color: #a6afb4; }
+    @keyframes danger-pulse { 50% { outline-color: #bd343455; } }
+    .card-head { padding: 15px 16px 12px; display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; border-bottom: 1px solid #e8ecee; }
+    .worker-name { overflow-wrap: anywhere; margin: 0; font: 700 22px/1.1 "Barlow Condensed", sans-serif; }
+    .worker-meta { margin-top: 5px; color: var(--muted); font-size: 12px; font-weight: 600; }
+    .worker-card.inactive .worker-meta { color: #748087; }
+    .pill { flex: 0 0 auto; padding: 5px 8px; border-radius: 3px; font-size: 10px; font-weight: 800; letter-spacing: .075em; }
+    .pill.safe { color: var(--green); background: var(--green-bg); }.pill.danger { color: var(--red); background: #ffe0de; }.pill.no-status { color: var(--amber); background: var(--amber-bg); }.pill.inactive { color: #5f6a71; background: #e1e6e8; }
+    .reason { display: none; padding: 7px 16px; background: var(--red-bg); color: #8d2222; font-size: 12px; font-weight: 800; letter-spacing: .03em; }
+    .worker-card.danger .reason { display: block; }
+    .metrics { display: grid; grid-template-columns: 1fr 1fr; }
+    .metric { padding: 13px 15px; min-height: 70px; border-bottom: 1px solid #edf0f2; }
+    .metric:nth-child(odd) { border-right: 1px solid #edf0f2; }
+    .metric:nth-last-child(-n+2) { border-bottom: 0; }
+    .metric-label { color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: .075em; text-transform: uppercase; }
+    .metric-value { margin-top: 4px; font: 700 25px/1 "Barlow Condensed", sans-serif; color: #293844; }
+    .metric.affected { background: #fff1ef; box-shadow: inset 0 0 0 1px #f5d0cd; }
+    .metric.affected .metric-label, .metric.affected .metric-value { color: #a02b27; }
+    .worker-card.inactive .metric-value { color: #77838a; }
+    .card-foot { display: flex; justify-content: space-between; gap: 8px; padding: 9px 15px; border-top: 1px solid #edf0f2; color: var(--muted); font-size: 11px; }
+    .empty { grid-column: 1/-1; padding: 35px; border: 1px dashed #aeb8be; background: #f8f9fa; color: var(--muted); text-align: center; }
+    footer { max-width: 1500px; margin: auto; padding: 0 28px 24px; color: #69757d; font-size: 11px; }
+    .overlay { position: fixed; z-index: 20; inset: 0; display: none; place-items: center; padding: 20px; background: #111b22df; }
+    .overlay.open { display: grid; }
+    .dialog { width: min(100%, 520px); max-height: min(90vh, 760px); overflow: auto; background: white; border-radius: 6px; border-top: 7px solid var(--red); box-shadow: 0 20px 70px #0008; }
+    .dialog-head { padding: 22px 24px 15px; }
+    .alert-kicker { color: var(--red); font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+    .dialog h2 { margin: 5px 0 0; font: 800 32px/1 "Barlow Condensed", sans-serif; text-transform: uppercase; }
+    .dialog-intro { margin: 10px 0 0; color: #5b6871; font-size: 14px; }
+    .alert-list { display: grid; gap: 9px; padding: 0 24px 18px; }
+    .alert-item { padding: 11px 12px; border-left: 4px solid var(--red); background: #fff0ef; }
+    .alert-worker { font-weight: 800; }.alert-reasons { margin-top: 3px; color: #8e2925; font-size: 13px; font-weight: 700; }
+    .dialog-actions { padding: 0 24px 24px; }
+    .dialog-actions .button { width: 100%; min-height: 46px; font-size: 14px; }
+    .login-overlay { z-index: 10; }
+    .login-dialog { border-top-color: var(--yellow); }
+    .login-dialog .alert-kicker { color: #79600d; }
+    .login-form { padding: 0 24px 24px; }
+    .field { display: grid; gap: 6px; margin: 13px 0; }
+    .field label { font-size: 12px; font-weight: 800; letter-spacing: .04em; }
+    .field input { width: 100%; padding: 11px 12px; border: 1px solid #b9c2c7; border-radius: 4px; background: white; color: var(--ink); }
+    .login-error { min-height: 18px; margin: 0 0 10px; color: var(--red); font-size: 13px; font-weight: 700; }
+    .login-form .button { width: 100%; min-height: 44px; }
+    .login-footnote { margin: 12px 0 0; color: var(--muted); font-size: 11px; line-height: 1.45; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+    @media (max-width: 850px) { .summary { grid-template-columns: repeat(4, 1fr); }.summary-connection { grid-column: 1/-1; min-height: 70px; } }
+    @media (max-width: 620px) { .topbar-inner { padding: 14px 16px; min-height: 78px; }.brand-mark { width: 40px; height: 40px; }.brand { gap: 10px; } h1 { font-size: 24px; }.subtitle { font-size: 11px; }.prototype-tag { display: none; } main { padding: 18px 14px 28px; } footer { padding: 0 14px 20px; }.summary { grid-template-columns: repeat(2, 1fr); gap: 8px; }.summary-connection { grid-column: 1/-1; }.stat { min-height: 72px; padding: 11px 13px; }.toolbar { align-items: flex-start; flex-direction: column; }.toolbar-actions { justify-content: flex-start; width: 100%; }.connection { min-width: auto; }.topbar-inner { gap: 10px; }.grid { grid-template-columns: 1fr; } }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">MG</div>
+        <div><h1>MineGuard</h1><p class="subtitle">Smart Mining Safety System · Control Room</p></div>
+      </div>
+      <div class="header-right">
+        <span class="prototype-tag">Academic prototype · Not certified</span>
+        <div id="headerConnection" class="connection" data-state="disconnected" role="status" aria-live="polite"><span class="dot" aria-hidden="true"></span><span id="headerConnectionText">Not connected</span></div>
+      </div>
+    </div>
+  </header>
+  <main>
+    <p class="notice"><strong>Prototype notice:</strong> This dashboard is an academic IoT prototype and is not a certified safety system. Gas readings are raw MQ-4 ADC values, not ppm.</p>
+    <section class="summary" aria-label="Dashboard summary">
+      <div class="stat"><div class="stat-label">Registered</div><div id="countRegistered" class="stat-value">0</div></div>
+      <div class="stat active"><div class="stat-label">Active</div><div id="countActive" class="stat-value">0</div></div>
+      <div class="stat danger"><div class="stat-label">In danger</div><div id="countDanger" class="stat-value">0</div></div>
+      <div class="stat inactive"><div class="stat-label">Inactive</div><div id="countInactive" class="stat-value">0</div></div>
+      <div class="summary-connection"><div class="connection" data-state="disconnected"><span class="dot" aria-hidden="true"></span><span id="summaryConnectionText">Waiting for connection</span></div><div class="hint">Secure WebSocket · EMQX Cloud Serverless</div></div>
+    </section>
+    <section aria-labelledby="workersHeading">
+      <div class="toolbar">
+        <h2 id="workersHeading">Helmet status</h2>
+        <div class="toolbar-actions">
+          <button id="startButton" class="button primary" type="button">Start monitoring</button>
+          <button id="previewButton" class="button" type="button">Preview with demo data (no login)</button>
+          <label class="demo-toggle"><input id="runDemo" type="checkbox"> Run demo</label>
+        </div>
+      </div>
+      <div id="demoBanner" class="demo-banner" role="status">DEMO PREVIEW · Simulated sensor messages · No broker connection</div>
+      <div id="workerGrid" class="grid" aria-live="polite" aria-relevant="additions text"></div>
+    </section>
+  </main>
+  <footer>MineGuard academic prototype · Helmet telemetry updates every 5 seconds · Inactivity threshold: 20 seconds</footer>
+
+  <div id="loginOverlay" class="overlay login-overlay" aria-hidden="true">
+    <section class="dialog login-dialog" role="dialog" aria-modal="true" aria-labelledby="loginTitle" aria-describedby="loginDescription">
+      <div class="dialog-head"><div class="alert-kicker">Secure broker access</div><h2 id="loginTitle">Start monitoring</h2><p id="loginDescription" class="dialog-intro">Sign in with a subscribe-only EMQX account. Credentials remain in memory for this session and are not saved.</p></div>
+      <form id="loginForm" class="login-form">
+        <div class="field"><label for="mqttUser">Username</label><input id="mqttUser" name="username" autocomplete="username" required></div>
+        <div class="field"><label for="mqttPass">Password</label><input id="mqttPass" name="password" type="password" autocomplete="current-password" required></div>
+        <p id="loginError" class="login-error" role="alert"></p>
+        <button class="button primary" type="submit">Connect to broker</button>
+        <p class="login-footnote">Use a read-only account. Do not enter credentials on a shared or untrusted computer. The broker connection uses TLS through secure WebSockets.</p>
+      </form>
+    </section>
+  </div>
+
+  <div id="dangerOverlay" class="overlay" aria-hidden="true">
+    <section class="dialog" role="alertdialog" aria-modal="true" aria-labelledby="dangerTitle" aria-describedby="dangerIntro">
+      <div class="dialog-head"><div class="alert-kicker">Immediate attention</div><h2 id="dangerTitle">Danger detected</h2><p id="dangerIntro" class="dialog-intro">Active helmets reporting danger. Review the listed conditions.</p></div>
+      <div id="alertList" class="alert-list"></div>
+      <div class="dialog-actions"><button id="ackButton" class="button primary" type="button">Acknowledge and silence alarm</button></div>
+    </section>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/mqtt@5.3.4/dist/mqtt.min.js"></script>
+  <script>
+    // ======================== CONFIG ========================
+    const CFG = {
+      ROOT: "mineguard-pune-swaraj-2026",
+      WORKER_ID: "W01",
+      SUBSCRIBE_TOPIC: "mineguard-pune-swaraj-2026/#",
+      broker: "wss://qffa16a6.ala.asia-southeast1.emqxsl.com:8084/mqtt",
+      STALE_MS: 20000,
+      ROSTER: [
+        { id: "W01", name: "Aarav Sharma", empNo: "MG-101" },
+        { id: "W02", name: "Meera Patil", empNo: "MG-102" },
+        { id: "W03", name: "Rohan Kulkarni", empNo: "MG-103" },
+        { id: "W04", name: "Anaya Joshi", empNo: "MG-104" },
+        { id: "W05", name: "Kabir Deshmukh", empNo: "MG-105" }
+      ]
+    };
+    // ========================================================
+
+    (() => {
+      "use strict";
+      const ID_RE = /^[A-Za-z0-9_-]{1,20}$/;
+      const REASON_LABELS = { "TEMP": "Temperature high", "GAS": "Combustible gas", "HR-LOW": "Heart rate low", "HR-HIGH": "Heart rate high" };
+      const states = new Map();
+      const rosterById = new Map();
+      const acknowledged = new Set();
+      let client = null;
+      let creds = { user: "", pass: "" };
+      let audioContext = null;
+      let alarmTimer = null;
+      let demoInterval = null;
+      let demoTick = 0;
+      let demoMode = false;
+      let connectionText = "Not connected";
+      let connectionState = "disconnected";
+
+      const $ = (id) => document.getElementById(id);
+      const grid = $("workerGrid");
+      const loginOverlay = $("loginOverlay");
+      const dangerOverlay = $("dangerOverlay");
+      const runDemo = $("runDemo");
+      const demoBanner = $("demoBanner");
+
+      function escapeHTML(value) {
+        return String(value).replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+      }
+      function safeRoster() {
+        const seen = new Set();
+        for (const entry of CFG.ROSTER) {
+          if (!entry || typeof entry !== "object" || typeof entry.id !== "string" || !ID_RE.test(entry.id) || seen.has(entry.id)) continue;
+          seen.add(entry.id);
+          rosterById.set(entry.id, { id: entry.id, name: String(entry.name ?? ""), empNo: String(entry.empNo ?? "") });
+          states.set(entry.id, makeState(entry.id));
+        }
+      }
+      function makeState(id) {
+        return { id, registered: rosterById.has(id), online: false, lastData: 0, receivedData: false, temp: null, hum: null, gas: null, hr: null, rawStatus: null, statusKind: "no-status", reasons: [], lastSeen: 0 };
+      }
+      function getState(id) {
+        let state = states.get(id);
+        if (!state) { state = makeState(id); state.registered = rosterById.has(id); states.set(id, state); }
+        return state;
+      }
+      function cleanNumber(value) { return typeof value === "number" && Number.isFinite(value) ? value : null; }
+      function parseStatus(value) {
+        if (typeof value !== "string") return { kind: "no-status", reasons: [], raw: null };
+        const text = value.trim();
+        if (text.toUpperCase() === "NORMAL") return { kind: "safe", reasons: [], raw: text };
+        const match = text.match(/^DANGER:\s*(.*)$/i);
+        if (match) {
+          const tokens = match[1].trim().split(/\s+/).filter(Boolean).map((token) => token.toUpperCase());
+          const reasons = [...new Set(tokens.filter((token) => Object.hasOwn(REASON_LABELS, token)))];
+          return { kind: "danger", reasons, raw: text };
+        }
+        return { kind: "no-status", reasons: [], raw: text || null };
+      }
+      function ingest(id, kind, payload) {
+        try {
+          if (typeof id !== "string" || !ID_RE.test(id) || (kind !== "data" && kind !== "status")) return false;
+          const state = getState(id);
+          const now = Date.now();
+          if (kind === "status") {
+            const text = String(payload).trim().toLowerCase();
+            if (text === "online") state.online = true;
+            else if (text === "offline") state.online = false;
+            state.lastSeen = now;
+            render();
+            return true;
+          }
+          let packet;
+          try { packet = JSON.parse(String(payload)); } catch (_) { return false; }
+          if (!packet || typeof packet !== "object" || Array.isArray(packet)) return false;
+          state.temp = cleanNumber(packet.temp);
+          state.hum = cleanNumber(packet.hum);
+          state.gas = cleanNumber(packet.gas);
+          const heartValue = Object.prototype.hasOwnProperty.call(packet, "hr") ? packet.hr : packet.heart_rate;
+          state.hr = cleanNumber(heartValue);
+          const parsed = Object.prototype.hasOwnProperty.call(packet, "status") ? parseStatus(packet.status) : { kind: "no-status", reasons: [], raw: null };
+          const wasDanger = state.statusKind === "danger";
+          state.statusKind = parsed.kind;
+          state.reasons = parsed.reasons;
+          state.rawStatus = parsed.raw;
+          state.receivedData = true;
+          state.lastData = now;
+          state.lastSeen = now;
+          if (parsed.kind !== "danger" && wasDanger) acknowledged.delete(id);
+          if (parsed.kind !== "danger") acknowledged.delete(id);
+          render();
+          return true;
+        } catch (_) {
+          return false;
+        }
+      }
+      function isActive(state, now = Date.now()) {
+        return (state.online || state.receivedData) && state.lastData > 0 && now - state.lastData <= CFG.STALE_MS;
+      }
+      function cardStatus(state, active) {
+        if (!active) return "inactive";
+        return state.statusKind;
+      }
+      function statusText(kind) { return ({ safe: "SAFE", danger: "DANGER", "no-status": "NO STATUS", inactive: "INACTIVE" })[kind] || "NO STATUS"; }
+      function metricValue(value, suffix = "") { return value === null || value === 0 && suffix === " BPM" ? "--" : `${value}${suffix}`; }
+      function makeMetric(label, value, key, affected, suffix = "") {
+        const box = document.createElement("div");
+        box.className = `metric${affected ? " affected" : ""}`;
+        const lab = document.createElement("div"); lab.className = "metric-label"; lab.textContent = label;
+        const val = document.createElement("div"); val.className = "metric-value"; val.textContent = metricValue(value, suffix);
+        box.append(lab, val);
+        return box;
+      }
+      function formatSeen(timestamp) {
+        if (!timestamp) return "No helmet connected";
+        return `Last seen ${new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit", second: "2-digit" }).format(timestamp)}`;
+      }
+      function createCard(state, now) {
+        const active = isActive(state, now);
+        const kind = cardStatus(state, active);
+        const roster = rosterById.get(state.id);
+        const card = document.createElement("article");
+        card.className = `worker-card ${kind}`;
+        card.setAttribute("aria-label", `${roster ? roster.name : "Unregistered helmet"}, Worker ID ${state.id}, ${statusText(kind)}`);
+        const head = document.createElement("div"); head.className = "card-head";
+        const identity = document.createElement("div");
+        const name = document.createElement("h3"); name.className = "worker-name"; name.textContent = roster ? roster.name : "Unregistered helmet";
+        const meta = document.createElement("div"); meta.className = "worker-meta"; meta.textContent = `Worker ID ${state.id} · Employee no. ${roster ? roster.empNo : "--"}`;
+        identity.append(name, meta);
+        const pill = document.createElement("span"); pill.className = `pill ${kind}`; pill.textContent = statusText(kind);
+        head.append(identity, pill); card.append(head);
+        const reason = document.createElement("div"); reason.className = "reason";
+        if (kind === "danger") reason.textContent = state.reasons.length ? state.reasons.map((item) => REASON_LABELS[item]).join(", ") : "Danger reported";
+        card.append(reason);
+        const metrics = document.createElement("div"); metrics.className = "metrics";
+        const values = active ? state : { temp: null, hum: null, gas: null, hr: null };
+        const danger = kind === "danger" ? state.reasons : [];
+        metrics.append(
+          makeMetric("Temperature (°C)", values.temp, "temp", danger.includes("TEMP"), " °C"),
+          makeMetric("Humidity (%)", values.hum, "hum", false, " %"),
+          makeMetric("Gas (raw)", values.gas, "gas", danger.includes("GAS"), ""),
+          makeMetric("Heart rate (BPM)", values.hr === 0 ? null : values.hr, "hr", danger.includes("HR-LOW") || danger.includes("HR-HIGH"), " BPM")
+        );
+        card.append(metrics);
+        const foot = document.createElement("div"); foot.className = "card-foot";
+        const seen = document.createElement("span"); seen.textContent = active ? "Live telemetry" : formatSeen(state.lastData || (state.lastSeen && !state.receivedData ? state.lastSeen : 0));
+        const source = document.createElement("span"); source.textContent = roster ? "Registered" : "Unregistered";
+        foot.append(seen, source); card.append(foot);
+        return card;
+      }
+      function setConnection(text, state) {
+        connectionText = String(text);
+        connectionState = state;
+        $("headerConnectionText").textContent = connectionText;
+        $("headerConnection").dataset.state = state;
+        const summary = $("summaryConnectionText").parentElement;
+        summary.dataset.state = state;
+        $("summaryConnectionText").textContent = connectionText;
+      }
+      function render() {
+        const now = Date.now();
+        const all = [...states.values()];
+        const ordered = all.sort((a, b) => {
+          const rank = { danger: 0, "no-status": 1, safe: 2, inactive: 3 };
+          return rank[cardStatus(a, isActive(a, now))] - rank[cardStatus(b, isActive(b, now))] || a.id.localeCompare(b.id);
+        });
+        grid.replaceChildren();
+        if (!ordered.length) { const empty = document.createElement("div"); empty.className = "empty"; empty.textContent = "No helmets registered."; grid.append(empty); }
+        for (const state of ordered) grid.append(createCard(state, now));
+        const active = all.filter((state) => isActive(state, now));
+        const danger = active.filter((state) => state.statusKind === "danger");
+        $("countRegistered").textContent = String(rosterById.size);
+        $("countActive").textContent = String(active.length);
+        $("countDanger").textContent = String(danger.length);
+        $("countInactive").textContent = String(all.length - active.length);
+        document.title = danger.length ? `(${danger.length}) DANGER | MineGuard` : "MineGuard | Control Room";
+        updateDangerModal(danger);
+      }
+      function updateDangerModal(danger) {
+        for (const state of states.values()) if (state.statusKind !== "danger") acknowledged.delete(state.id);
+        const pending = danger.filter((state) => !acknowledged.has(state.id));
+        if (!pending.length) {
+          dangerOverlay.classList.remove("open"); dangerOverlay.setAttribute("aria-hidden", "true");
+          stopAlarm(); return;
+        }
+        const list = $("alertList"); list.replaceChildren();
+        for (const state of danger) {
+          const roster = rosterById.get(state.id);
+          const item = document.createElement("div"); item.className = "alert-item";
+          const who = document.createElement("div"); who.className = "alert-worker"; who.textContent = `${roster ? roster.name : "Unregistered helmet"} · ${state.id}`;
+          const why = document.createElement("div"); why.className = "alert-reasons"; why.textContent = state.reasons.length ? state.reasons.map((reason) => REASON_LABELS[reason]).join(", ") : "Danger reported";
+          item.append(who, why); list.append(item);
+        }
+        dangerOverlay.classList.add("open"); dangerOverlay.setAttribute("aria-hidden", "false"); startAlarm();
+      }
+      function ensureAudio() {
+        try {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (!AudioCtx) return null;
+          if (!audioContext) audioContext = new AudioCtx();
+          if (audioContext.state === "suspended") audioContext.resume().catch(() => {});
+          return audioContext;
+        } catch (_) { return null; }
+      }
+      function beep() {
+        const ctx = audioContext;
+        if (!ctx || ctx.state !== "running") return;
+        try {
+          const oscillator = ctx.createOscillator();
+          const gain = ctx.createGain();
+          oscillator.type = "square"; oscillator.frequency.setValueAtTime(880, ctx.currentTime);
+          gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.07, ctx.currentTime + 0.012);
+          gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.19);
+          oscillator.connect(gain); gain.connect(ctx.destination); oscillator.start(); oscillator.stop(ctx.currentTime + 0.2);
+        } catch (_) { /* Audio may be unavailable; dashboard continues. */ }
+      }
+      function startAlarm() { if (alarmTimer !== null) return; beep(); alarmTimer = window.setInterval(beep, 600); }
+      function stopAlarm() { if (alarmTimer !== null) { clearInterval(alarmTimer); alarmTimer = null; } }
+      function setLogin(open, message = "") {
+        $("loginError").textContent = message;
+        if (open) {
+          loginOverlay.classList.add("open");
+          loginOverlay.setAttribute("aria-hidden", "false");
+          setTimeout(() => $("mqttUser").focus(), 0);
+        } else {
+          // Move focus out of the dialog before hiding it from assistive technology.
+          if (loginOverlay.contains(document.activeElement)) $("startButton").focus();
+          loginOverlay.classList.remove("open");
+          loginOverlay.setAttribute("aria-hidden", "true");
+        }
+      }
+      function closeClient(clearCredentials = true) {
+        if (client) { const old = client; client = null; try { old.end(true); } catch (_) {} }
+        if (clearCredentials) creds = { user: "", pass: "" };
+      }
+      function startMonitoring() {
+        if (demoMode) stopDemo();
+        ensureAudio();
+        if (!window.mqtt || typeof window.mqtt.connect !== "function") {
+          setConnection("MQTT library unavailable", "error"); setLogin(true, "Could not load mqtt.js. Check the network and reload this page."); return;
+        }
+        setLogin(true, "");
+      }
+      $("startButton").addEventListener("click", () => startMonitoring());
+      $("loginForm").addEventListener("submit", (event) => {
+        event.preventDefault();
+        const userInput = $("mqttUser"), passInput = $("mqttPass");
+        creds = { user: userInput.value.trim(), pass: passInput.value };
+        passInput.value = "";
+        if (!creds.user || !creds.pass) { creds = { user: "", pass: "" }; setLogin(true, "Enter both username and password."); return; }
+        closeClient(false);
+        demoMode = false; stopDemo(); demoBanner.classList.remove("visible"); runDemo.checked = false;
+        setLogin(false);
+        setConnection("Connecting…", "disconnected");
+        try {
+          client = window.mqtt.connect(CFG.broker, {
+            clientId: "dash-" + Math.random().toString(16).slice(2, 8),
+            username: creds.user,
+            password: creds.pass,
+            reconnectPeriod: 5000,
+            connectTimeout: 10000
+          });
+          client.on("connect", () => {
+            setConnection("Connected", "connected");
+            client.subscribe(CFG.SUBSCRIBE_TOPIC, (err) => {
+              if (err) setConnection("Subscribe error: " + err.message, "error");
+            });
+          });
+          client.on("error", (error) => {
+            const message = error && error.message ? error.message : "Connection error";
+            setConnection("Error: " + message, "error");
+            if ((error && (error.code === 4 || error.code === 5)) || /not authori[sz]ed|bad user(name)? or password|bad credentials/i.test(message)) {
+              closeClient(true); setLogin(true, "Login rejected by the broker. Check the username and password.");
+            }
+          });
+          client.on("close", () => { if (client) setConnection("Disconnected, retrying…", "disconnected"); });
+          client.on("message", (topic, msg) => {
+            try {
+              const parts = String(topic).split("/");
+              if (parts.length < 3 || parts[0] !== CFG.ROOT) return;
+              ingest(parts[parts.length - 2], parts[parts.length - 1], msg.toString());
+            } catch (_) { /* Ignore malformed topics or payload wrappers. */ }
+          });
+        } catch (error) {
+          closeClient(true); setConnection("Connection error", "error");
+          setLogin(true, error && error.message ? "Unable to connect: " + error.message : "Unable to connect to the broker.");
+        }
+      });
+      function demoMessage(id, packet) {
+        ingest(id, "data", JSON.stringify(packet));
+        ingest(id, "status", "online");
+      }
+      function demoStep() {
+        const phase = demoTick % 8;
+        demoMessage("W01", { id: "W01", temp: 29.4, hum: 53, gas: 810, hr: 76, status: "NORMAL" });
+        demoMessage("W02", { id: "W02", temp: 30.1, hum: 48, gas: 1020, hr: 68, status: "NORMAL" });
+        const dangerNow = phase >= 1 && phase <= 4;
+        demoMessage("W03", { id: "W03", temp: dangerNow ? 34.8 : 30.2, hum: 55, gas: dangerNow ? 1740 : 920, hr: dangerNow ? 48 : 74, status: dangerNow ? "DANGER: TEMP GAS HR-LOW" : "NORMAL" });
+        demoTick += 1;
+      }
+      function startDemo() {
+        if (client) closeClient(true);
+        demoMode = true; demoBanner.classList.add("visible"); setConnection("Demo preview", "connected");
+        ensureAudio();
+        if (demoInterval !== null) clearInterval(demoInterval);
+        demoTick = 0; demoStep();
+        demoInterval = window.setInterval(demoStep, 2000);
+      }
+      function stopDemo() {
+        if (demoInterval !== null) { clearInterval(demoInterval); demoInterval = null; }
+        demoMode = false; demoBanner.classList.remove("visible");
+        if (!client) setConnection("Not connected", "disconnected");
+      }
+      $("previewButton").addEventListener("click", () => { runDemo.checked = true; startDemo(); });
+      runDemo.addEventListener("change", () => {
+        if (runDemo.checked) startDemo();
+        else { stopDemo(); render(); }
+      });
+      $("ackButton").addEventListener("click", () => {
+        for (const state of states.values()) if (state.statusKind === "danger" && isActive(state)) acknowledged.add(state.id);
+        stopAlarm(); render();
+      });
+      window.addEventListener("beforeunload", () => { closeClient(true); stopDemo(); stopAlarm(); if (audioContext) audioContext.close().catch(() => {}); });
+
+      // Initial roster cards are visible before login; all dynamic text is inserted using textContent.
+      safeRoster();
+      render();
+      window.setInterval(render, 2000);
+
+      // A callable test hook for local QA; production dashboard behavior uses the same ingest() path.
+      window.__mineguardTest = Object.freeze({ ingest, states, isActive, render });
+      // Keep this helper referenced to make explicit that any HTML string escaping is available for safe templating.
+      void escapeHTML;
+    })();
+  </script>
+</body>
+</html>
